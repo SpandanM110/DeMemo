@@ -77,7 +77,7 @@ export async function createWalletSet(name: string): Promise<string> {
  */
 export async function createWallet(
   walletSetId: string,
-  blockchain: string = 'ETH-SEPOLIA'
+  blockchain: 'ETH-SEPOLIA' | 'MATIC-AMOY' | 'SOL-DEVNET' | 'ARB-SEPOLIA' | 'AVAX-FUJI' = 'ETH-SEPOLIA'
 ): Promise<CircleWallet | null> {
   const client = getCircleClient();
 
@@ -97,7 +97,7 @@ export async function createWallet(
     blockchain: wallet.blockchain,
     state: wallet.state,
     walletSetId: wallet.walletSetId,
-    accountType: wallet.accountType,
+    accountType: 'EOA',
     createDate: wallet.createDate,
   };
 }
@@ -119,7 +119,7 @@ export async function getWallet(walletId: string): Promise<CircleWallet | null> 
     blockchain: wallet.blockchain,
     state: wallet.state,
     walletSetId: wallet.walletSetId,
-    accountType: wallet.accountType,
+    accountType: (wallet as { accountType?: string }).accountType || 'EOA',
     createDate: wallet.createDate,
   };
 }
@@ -140,7 +140,7 @@ export async function getWallets(walletSetId: string): Promise<CircleWallet[]> {
     blockchain: wallet.blockchain,
     state: wallet.state,
     walletSetId: wallet.walletSetId,
-    accountType: wallet.accountType,
+    accountType: (wallet as { accountType?: string }).accountType || 'EOA',
     createDate: wallet.createDate,
   }));
 }
@@ -155,9 +155,9 @@ export async function getWalletBalances(walletId: string): Promise<CircleWalletB
   
   return (response.data?.tokenBalances || []).map((balance) => ({
     token: {
-      symbol: balance.token.symbol,
-      name: balance.token.name,
-      decimals: balance.token.decimals,
+      symbol: balance.token.symbol || '',
+      name: balance.token.name || '',
+      decimals: balance.token.decimals || 0,
     },
     amount: balance.amount,
   }));
@@ -170,22 +170,23 @@ export async function createTransaction(
   walletId: string,
   destinationAddress: string,
   amount: string,
-  tokenId?: string
+  tokenId: string
 ): Promise<{ id: string; state: string }> {
   const client = getCircleClient();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response = await client.createTransaction({
     walletId,
     destinationAddress,
-    amounts: [amount],
-    tokenId, // If undefined, sends native token
+    amount: [amount],
+    tokenId,
     fee: {
       type: 'level',
       config: {
         feeLevel: 'MEDIUM',
       },
     },
-  });
+  } as any);
 
   return {
     id: response.data?.id || '',
