@@ -4,7 +4,7 @@
 
 DeMemo is a decentralized AI memory layer built on Arc Network. Your wallet is your identity, your conversations are encrypted and stored on IPFS, and your memories follow you everywhere.
 
-![DeMemo Banner](https://img.shields.io/badge/Built%20for-Arc%20Network%20Hackathon-black?style=for-the-badge)
+[![DeMemo Banner](https://img.shields.io/badge/Built%20for-Agentic%20Commerce%20on%20Arc%20Hackathon-black?style=for-the-badge)](https://lablab.ai/ai-hackathons/agentic-commerce-on-arc)
 
 ## Features
 
