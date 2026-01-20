@@ -105,6 +105,19 @@ export async function getProviderAndSigner(): Promise<{
 }
 
 /**
+ * Custom error class for blockchain operations
+ */
+export class BlockchainError extends Error {
+  code: string;
+  
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'BlockchainError';
+    this.code = code;
+  }
+}
+
+/**
  * Store a memory CID on the blockchain
  * Requires payment of 0.01 USDC (native gas token on Arc)
  */
@@ -132,9 +145,69 @@ export async function storeMemoryOnChain(cid: string): Promise<string> {
     console.log('Transaction confirmed:', receipt.hash);
 
     return receipt.hash;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Blockchain storage error:', error);
-    throw new Error('Failed to store memory on blockchain. Please ensure you have enough USDC for the transaction.');
+    
+    const errorObj = error as { code?: string; message?: string; reason?: string };
+    const errorMessage = errorObj.message || String(error);
+    const errorCode = errorObj.code || '';
+    const errorReason = errorObj.reason || '';
+    
+    // User rejected the transaction
+    if (errorCode === 'ACTION_REJECTED' || 
+        errorCode === '4001' || 
+        errorMessage.includes('user rejected') ||
+        errorMessage.includes('User denied') ||
+        errorMessage.includes('rejected')) {
+      throw new BlockchainError(
+        'Transaction cancelled. You rejected the transaction in your wallet.',
+        'USER_REJECTED'
+      );
+    }
+    
+    // Insufficient funds
+    if (errorMessage.includes('insufficient funds') || 
+        errorMessage.includes('insufficient balance') ||
+        errorReason.includes('insufficient')) {
+      throw new BlockchainError(
+        'Insufficient USDC balance. You need at least 0.01 USDC to save a memory. Get testnet USDC from the Arc faucet.',
+        'INSUFFICIENT_FUNDS'
+      );
+    }
+    
+    // Network error
+    if (errorMessage.includes('network') || 
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('connection')) {
+      throw new BlockchainError(
+        'Network error. Please check your connection and try again.',
+        'NETWORK_ERROR'
+      );
+    }
+    
+    // Contract error
+    if (errorMessage.includes('execution reverted') ||
+        errorMessage.includes('revert')) {
+      throw new BlockchainError(
+        'Transaction failed. The smart contract rejected the transaction.',
+        'CONTRACT_ERROR'
+      );
+    }
+    
+    // Wrong network
+    if (errorMessage.includes('chain') || 
+        errorMessage.includes('network mismatch')) {
+      throw new BlockchainError(
+        'Wrong network. Please switch to Arc Testnet in MetaMask.',
+        'WRONG_NETWORK'
+      );
+    }
+    
+    // Generic error
+    throw new BlockchainError(
+      'Failed to save memory. Please try again.',
+      'UNKNOWN_ERROR'
+    );
   }
 }
 

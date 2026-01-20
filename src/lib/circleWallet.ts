@@ -6,6 +6,7 @@
  */
 
 import { initiateDeveloperControlledWalletsClient } from '@circle-fin/developer-controlled-wallets';
+import crypto from 'crypto';
 
 // Types for Circle Wallet
 export interface CircleWallet {
@@ -61,32 +62,109 @@ export function getWalletSetId(): string {
 
 /**
  * Create a new wallet set
+ * According to Circle docs, requires:
+ * - name
+ * - entitySecretCiphertext (fresh for each request) - SDK handles this internally
+ * - idempotencyKey
  */
 export async function createWalletSet(name: string): Promise<string> {
   const client = getCircleClient();
   
+  // Generate idempotency key (required by Circle API)
+  const idempotencyKey = crypto.randomUUID();
+  
+  // SDK handles entitySecretCiphertext internally using the entitySecret from env
   const response = await client.createWalletSet({
     name,
-  });
+    idempotencyKey,
+  } as any); // Type assertion needed as SDK types may not include all fields
 
   return response.data?.walletSet?.id || '';
 }
 
 /**
+ * Generate a fresh Entity Secret Ciphertext for wallet operations
+ * This is required for each wallet creation request
+ */
+async function generateEntitySecretCiphertext(): Promise<string> {
+  const entitySecret = process.env.CIRCLE_ENTITY_SECRET;
+  if (!entitySecret) {
+    throw new Error('CIRCLE_ENTITY_SECRET not configured');
+  }
+
+  // Get Circle's public key
+  const apiKey = process.env.CIRCLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('CIRCLE_API_KEY not configured');
+  }
+
+  const publicKeyResponse = await fetch(
+    'https://api.circle.com/v1/w3s/config/entity/publicKey',
+    {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    }
+  );
+
+  if (!publicKeyResponse.ok) {
+    throw new Error('Failed to get Circle public key');
+  }
+
+  const publicKeyData = await publicKeyResponse.json();
+  const publicKey = publicKeyData.data.publicKey;
+
+  // Encrypt entity secret with Circle's public key
+  // Note: This uses Node.js crypto, so it must run server-side
+  const entitySecretBuffer = Buffer.from(entitySecret, 'hex');
+  
+  const encryptedEntitySecret = crypto.publicEncrypt(
+    {
+      key: publicKey,
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+      oaepHash: 'sha256',
+    },
+    entitySecretBuffer
+  );
+
+  return encryptedEntitySecret.toString('base64');
+}
+
+/**
  * Create a new wallet in a wallet set
+ * According to Circle docs, requires:
+ * - walletSetId
+ * - blockchains array
+ * - count
+ * - accountType
+ * - entitySecretCiphertext (fresh for each request)
+ * - idempotencyKey
+ * 
+ * Note: Arc Network is not directly supported by Circle. Use a supported testnet
+ * like ETH-SEPOLIA or MATIC-AMOY. Users can bridge tokens to Arc Network if needed.
  */
 export async function createWallet(
   walletSetId: string,
-  blockchain: 'ETH-SEPOLIA' | 'MATIC-AMOY' | 'SOL-DEVNET' | 'ARB-SEPOLIA' | 'AVAX-FUJI' = 'ETH-SEPOLIA'
+  blockchain: 'ETH-SEPOLIA' | 'MATIC-AMOY' | 'SOL-DEVNET' | 'ARB-SEPOLIA' | 'AVAX-FUJI' | 'BASE-SEPOLIA' = 'ETH-SEPOLIA'
 ): Promise<CircleWallet | null> {
   const client = getCircleClient();
 
+  // Generate fresh entity secret ciphertext (required for each wallet creation)
+  const entitySecretCiphertext = await generateEntitySecretCiphertext();
+
+  // Generate idempotency key (required by Circle API)
+  const idempotencyKey = crypto.randomUUID();
+
+  // SDK may handle entitySecretCiphertext internally, but Circle API requires it
+  // Using type assertion to pass required fields
   const response = await client.createWallets({
     walletSetId,
     blockchains: [blockchain],
     count: 1,
-    accountType: 'EOA', // Externally Owned Account
-  });
+    accountType: 'EOA', // Externally Owned Account (simpler, works for EVM chains)
+    entitySecretCiphertext, // Required by Circle API
+    idempotencyKey,
+  } as any); // Type assertion needed as SDK types may not expose all API fields
 
   const wallet = response.data?.wallets?.[0];
   if (!wallet) return null;
@@ -97,7 +175,7 @@ export async function createWallet(
     blockchain: wallet.blockchain,
     state: wallet.state,
     walletSetId: wallet.walletSetId,
-    accountType: 'EOA',
+    accountType: (wallet as any).accountType || 'EOA', // SDK types may not include this
     createDate: wallet.createDate,
   };
 }

@@ -1,19 +1,23 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Bot, User, Sparkles, Save, Coins, AlertTriangle, Settings } from 'lucide-react';
+import { Send, Loader2, Bot, User, Sparkles, Save, Coins, AlertTriangle, Settings, X, Key, Cpu } from 'lucide-react';
 import type { Message, Memory, ChatSession } from '@/types';
-
-const MESSAGE_LIMIT = 5;
+import { PRESET_PERSONAS } from '@/lib/personas';
+import { AVAILABLE_MODELS } from '@/lib/models';
+import MarkdownMessage from './MarkdownMessage';
 
 interface ChatInterfaceProps {
   session: ChatSession | null;
   onSendMessage: (message: string) => Promise<void>;
   isLoading: boolean;
   memories: Memory[];
+  activeMemoryContext?: Memory[];
+  onRemoveFromContext?: (cid: string) => void;
   isConnected: boolean;
   onSaveToMemory?: () => void;
   isSaving?: boolean;
+  saveError?: string | null;
   rateLimitError?: string | null;
   hasApiKey?: boolean;
   onOpenSettings?: () => void;
@@ -24,9 +28,12 @@ export default function ChatInterface({
   onSendMessage,
   isLoading,
   memories,
+  activeMemoryContext = [],
+  onRemoveFromContext,
   isConnected,
   onSaveToMemory,
   isSaving = false,
+  saveError,
   rateLimitError,
   hasApiKey = false,
   onOpenSettings,
@@ -104,6 +111,10 @@ export default function ChatInterface({
     );
   }
 
+  // Get persona and model info for display
+  const sessionPersona = PRESET_PERSONAS.find(p => p.id === session?.personaId) || PRESET_PERSONAS[0];
+  const sessionModel = AVAILABLE_MODELS.find(m => m.id === session?.modelId) || AVAILABLE_MODELS[0];
+
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-950">
       {/* Session Header */}
@@ -112,6 +123,17 @@ export default function ChatInterface({
           <h2 className="text-base font-medium text-zinc-100 truncate max-w-md">
             {session.title}
           </h2>
+          {/* Persona/Model badges */}
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800 rounded-full text-xs text-zinc-400" title={sessionPersona.description}>
+              <span>{sessionPersona.icon}</span>
+              <span className="hidden sm:inline">{sessionPersona.name}</span>
+            </span>
+            <span className="flex items-center gap-1 px-2 py-0.5 bg-zinc-800 rounded-full text-xs text-zinc-500" title={sessionModel.description}>
+              <Cpu className="w-3 h-3" />
+              <span className="hidden sm:inline">{sessionModel.name}</span>
+            </span>
+          </div>
           {session.isSaved && (
             <span className="flex items-center gap-1 px-2 py-0.5 bg-teal-500/10 rounded-full text-xs text-teal-400">
               <Save className="w-3 h-3" />
@@ -142,14 +164,64 @@ export default function ChatInterface({
         )}
       </div>
 
-      {/* Memory Context Banner */}
-      {memories.length > 0 && (
+      {/* Active Memory Context Banner */}
+      {activeMemoryContext.length > 0 && (
+        <div className="px-4 py-2 bg-teal-500/5 border-b border-teal-500/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-teal-400">
+              <Sparkles className="w-4 h-4" />
+              <span>
+                Using {activeMemoryContext.length} memor{activeMemoryContext.length !== 1 ? 'ies' : 'y'} as context
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {activeMemoryContext.map((memory) => (
+                <div
+                  key={memory.cid}
+                  className="flex items-center gap-1 px-2 py-0.5 bg-teal-500/10 rounded-full text-xs text-teal-400"
+                >
+                  <span className="max-w-24 truncate">
+                    {memory.conversation.title || memory.cid.slice(0, 8)}
+                  </span>
+                  {onRemoveFromContext && (
+                    <button
+                      onClick={() => onRemoveFromContext(memory.cid)}
+                      className="hover:bg-teal-500/20 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Memory Info Banner (when no active context but has saved memories) */}
+      {activeMemoryContext.length === 0 && memories.length > 0 && (
         <div className="px-4 py-2 bg-zinc-800/30 border-b border-zinc-800">
-          <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <div className="flex items-center gap-2 text-sm text-zinc-600">
             <Sparkles className="w-4 h-4" />
             <span>
-              AI has access to {memories.length} saved memor{memories.length !== 1 ? 'ies' : 'y'}
+              {memories.length} saved memor{memories.length !== 1 ? 'ies' : 'y'} available
             </span>
+            <span className="text-zinc-700">•</span>
+            <span className="text-zinc-500">
+              Load from sidebar to use as context
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Save Error */}
+      {saveError && (
+        <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/20">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-red-200">{saveError}</p>
+            </div>
           </div>
         </div>
       )}
@@ -175,15 +247,21 @@ export default function ChatInterface({
         </div>
       )}
 
-      {/* Message Count (when not using own API key) */}
-      {!hasApiKey && !session.isSaved && messages.length > 0 && (
-        <div className="px-4 py-2 bg-zinc-800/20 border-b border-zinc-800">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-zinc-500">
-              {messages.filter(m => m.role === 'user').length} / {MESSAGE_LIMIT} messages used
-            </span>
-            {messages.filter(m => m.role === 'user').length >= MESSAGE_LIMIT - 1 && (
-              <span className="text-amber-400 text-xs">Approaching limit</span>
+      {/* API Key Required Banner */}
+      {!hasApiKey && (
+        <div className="px-4 py-3 bg-amber-500/10 border-b border-amber-500/20">
+          <div className="flex items-center gap-3">
+            <Key className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-amber-200">Add your Groq API key in Settings to start chatting</p>
+            </div>
+            {onOpenSettings && (
+              <button
+                onClick={onOpenSettings}
+                className="px-3 py-1 text-sm bg-amber-400/20 text-amber-400 rounded-lg hover:bg-amber-400/30 transition-colors"
+              >
+                Open Settings
+              </button>
             )}
           </div>
         </div>
@@ -195,14 +273,28 @@ export default function ChatInterface({
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-                <Sparkles className="w-7 h-7 text-zinc-500" />
+                {hasApiKey ? (
+                  <Sparkles className="w-7 h-7 text-zinc-500" />
+                ) : (
+                  <Key className="w-7 h-7 text-zinc-500" />
+                )}
               </div>
               <h3 className="text-base font-medium text-zinc-200 mb-1">
-                Start a Conversation
+                {hasApiKey ? 'Start a Conversation' : 'Setup Required'}
               </h3>
               <p className="text-zinc-600 text-sm max-w-sm">
-                Type a message below. When you&apos;re happy with this chat, save it to your on-chain memory!
+                {hasApiKey 
+                  ? "Type a message below. When you're happy with this chat, save it to your on-chain memory!"
+                  : "Add your free Groq API key in Settings to start chatting with AI. Get one at console.groq.com"}
               </p>
+              {!hasApiKey && onOpenSettings && (
+                <button
+                  onClick={onOpenSettings}
+                  className="mt-4 px-4 py-2 bg-zinc-100 text-zinc-900 rounded-lg text-sm font-medium hover:bg-white transition-colors"
+                >
+                  Open Settings
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -227,7 +319,11 @@ export default function ChatInterface({
                   : 'bg-zinc-800/50 text-zinc-200 border border-zinc-800'
               }`}
             >
-              <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+              {message.role === 'assistant' ? (
+                <MarkdownMessage content={message.content} />
+              ) : (
+                <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+              )}
               <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-zinc-500' : 'text-zinc-600'}`}>
                 {new Date(message.timestamp).toLocaleTimeString()}
               </p>

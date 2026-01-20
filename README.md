@@ -181,8 +181,20 @@ npm run lint
 
 ## License
 
-MIT License
+**Dual License** - Time-Based
+
+| Period | License | Permissions |
+|--------|---------|-------------|
+| **Jan 9-24, 2026** (Hackathon) | MIT | ✅ Use, modify, distribute freely |
+| **After Jan 24, 2026** | Proprietary | ❌ All rights reserved |
+
+During the hackathon period, this software is open source under MIT License.
+After January 24, 2026, it converts to a proprietary license.
+
+See the [LICENSE](LICENSE) file for full details.
+
+© 2026 SpandanM110
 
 ---
 
-Built for the Arc Network Hackathon.
+Built for the [Agentic Commerce on Arc Hackathon](https://lablab.ai/ai-hackathons/agentic-commerce-on-arc).

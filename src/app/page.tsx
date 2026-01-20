@@ -7,7 +7,9 @@ import WalletSelector from '@/components/WalletSelector';
 import SessionSidebar from '@/components/SessionSidebar';
 import ChatInterface from '@/components/ChatInterface';
 import SettingsModal, { getSettings } from '@/components/SettingsModal';
-import { fullWalletConnect } from '@/lib/wallet';
+import NewChatModal from '@/components/NewChatModal';
+import MemoryViewer from '@/components/MemoryViewer';
+import { fullWalletConnect, restoreWalletConnection, clearCachedEncryptionSignature } from '@/lib/wallet';
 import { getUSDCBalance, getMemoryCount } from '@/lib/blockchain';
 import { saveMemory, loadMemories } from '@/lib/memory';
 import { deriveKeyFromSignature } from '@/lib/encryption';
@@ -19,6 +21,7 @@ import {
   deleteSession,
   renameSession,
   markSessionAsSaved,
+  type SessionConfig,
 } from '@/lib/sessions';
 import type { WalletState, Message, Memory, ChatSession, WalletType } from '@/types';
 
@@ -50,9 +53,13 @@ export default function Home() {
   const [memoryCount, setMemoryCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [savingSessionId, setSavingSessionId] = useState<string | null>(null);
+  const [isLoadingMemories, setIsLoadingMemories] = useState(false);
+  const [viewingMemory, setViewingMemory] = useState<Memory | null>(null);
+  const [activeMemoryContext, setActiveMemoryContext] = useState<Memory[]>([]);
 
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [userApiKey, setUserApiKey] = useState<string>('');
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
 
@@ -75,13 +82,57 @@ export default function Home() {
     }
   }, [walletState.address, refreshSessions]);
 
-  // Load user API key when wallet connects
+  // Load user settings when wallet connects
   useEffect(() => {
     if (walletState.address) {
       const settings = getSettings(walletState.address);
-      setUserApiKey(settings.geminiApiKey || '');
+      setUserApiKey(settings.groqApiKey || '');
     }
   }, [walletState.address]);
+
+  // Restore wallet connection on page load (for MetaMask)
+  // Only restore if user has previously authenticated (has encryption key)
+  useEffect(() => {
+    // Don't restore if:
+    // 1. Already connected
+    // 2. Wallet type is set (user is in process of connecting)
+    // 3. Wallet selector is open (user is choosing wallet)
+    if (walletState.isConnected || walletType !== null || showWalletSelector) return;
+
+    const restoreConnection = async () => {
+      try {
+        const restoredState = await restoreWalletConnection();
+        // Only restore if encryption key exists (user has authenticated before)
+        // This prevents showing chat interface before authentication
+        if (restoredState && restoredState.address && restoredState.encryptionKey) {
+          setWalletState(restoredState);
+          setWalletType('metamask');
+
+          // Load memories and sessions
+          const result = await loadMemories(restoredState.address, restoredState.encryptionKey);
+          if (result.success && result.memories) {
+            setMemories(result.memories);
+          }
+
+          const count = await getMemoryCount(restoredState.address);
+          setMemoryCount(count);
+
+          const existingSessions = getSessions(restoredState.address);
+          if (existingSessions.length === 0) {
+            const newSession = createSession(restoredState.address);
+            setActiveSessionId(newSession.id);
+          } else {
+            setActiveSessionId(existingSessions[0].id);
+          }
+          setSessions(getSessions(restoredState.address));
+        }
+      } catch (error) {
+        console.error('Failed to restore wallet connection:', error);
+      }
+    };
+
+    restoreConnection();
+  }, [walletState.isConnected, walletType, showWalletSelector]); // Include showWalletSelector in deps
 
   // Show wallet selector modal
   const handleShowWalletSelector = () => {
@@ -229,6 +280,11 @@ export default function Home() {
 
   // Handle wallet disconnection
   const handleDisconnect = () => {
+    // Clear cached signature if MetaMask
+    if (walletState.address && walletType === 'metamask') {
+      clearCachedEncryptionSignature(walletState.address);
+    }
+
     setWalletState({
       address: null,
       isConnected: false,
@@ -261,6 +317,9 @@ export default function Home() {
       
       if (accounts.length === 0) {
         // User disconnected their wallet
+        if (walletState.address) {
+          clearCachedEncryptionSignature(walletState.address);
+        }
         setWalletState({
           address: null,
           isConnected: false,
@@ -276,6 +335,9 @@ export default function Home() {
         setMemoryCount(0);
       } else if (accounts[0] !== walletState.address) {
         // Account changed - disconnect and let them reconnect
+        if (walletState.address) {
+          clearCachedEncryptionSignature(walletState.address);
+        }
         setWalletState({
           address: null,
           isConnected: false,
@@ -320,8 +382,14 @@ export default function Home() {
 
   // Session handlers
   const handleNewSession = () => {
+    // Open the new chat modal instead of creating directly
+    setShowNewChatModal(true);
+  };
+
+  // Create session with config from modal
+  const handleCreateSessionWithConfig = (config: SessionConfig) => {
     if (!walletState.address) return;
-    const newSession = createSession(walletState.address);
+    const newSession = createSession(walletState.address, config);
     refreshSessions();
     setActiveSessionId(newSession.id);
   };
@@ -354,15 +422,59 @@ export default function Home() {
     refreshSessions();
   };
 
+  // Memory handlers
+  const handleRefreshMemories = async () => {
+    if (!walletState.address || !walletState.encryptionKey) return;
+    
+    setIsLoadingMemories(true);
+    try {
+      const result = await loadMemories(walletState.address, walletState.encryptionKey);
+      if (result.success && result.memories) {
+        setMemories(result.memories);
+      }
+      const count = await getMemoryCount(walletState.address);
+      setMemoryCount(count);
+    } catch (error) {
+      console.error('Failed to refresh memories:', error);
+    } finally {
+      setIsLoadingMemories(false);
+    }
+  };
+
+  const handleViewMemory = (memory: Memory) => {
+    setViewingMemory(memory);
+  };
+
+  const handleLoadMemoryAsContext = (memory: Memory) => {
+    // Add memory to active context if not already there
+    setActiveMemoryContext((prev) => {
+      const exists = prev.some((m) => m.cid === memory.cid);
+      if (exists) return prev;
+      // Keep only the last 5 memories as context to avoid token limits
+      const updated = [...prev, memory].slice(-5);
+      return updated;
+    });
+    // Close the viewer if open
+    setViewingMemory(null);
+  };
+
+  const handleRemoveFromContext = (cid: string) => {
+    setActiveMemoryContext((prev) => prev.filter((m) => m.cid !== cid));
+  };
+
   // Send message to AI
   const handleSendMessage = async (content: string) => {
     if (!walletState.isConnected || !activeSession || !walletState.address) return;
 
-    // Clear any previous rate limit error
+    // Clear any previous errors
     setRateLimitError(null);
 
-    // Count user messages in this session (for rate limiting)
-    const userMessageCount = activeSession.messages.filter(m => m.role === 'user').length;
+    // Check if API key is configured
+    if (!userApiKey) {
+      setRateLimitError('Please add your Groq API key in Settings to use the AI chat. Get a free key at console.groq.com');
+      setShowSettings(true);
+      return;
+    }
 
     // Add user message
     const userMessage: Message = {
@@ -384,24 +496,43 @@ export default function Home() {
     setIsAiLoading(true);
 
     try {
-      // Call AI API with user API key and message count
+      // ONLY use memory context if explicitly loaded by user (no auto-fallback)
+      // This prevents context poisoning - memories are only used when user clicks "Load as Context"
+      const contextMemories = activeMemoryContext.length > 0 
+        ? activeMemoryContext 
+        : []; // Empty array = no memory context unless explicitly loaded
+
+      // Call AI API with Groq - use session's persona/model config
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: content,
           conversationHistory: updatedSession.messages,
-          memoryContext: memories.slice(0, 5),
-          userApiKey: userApiKey || undefined,
-          messageCount: userMessageCount,
+          memoryContext: contextMemories.length > 0 ? contextMemories : undefined, // Only send if explicitly loaded
+          userApiKey: userApiKey,
+          selectedModel: activeSession.modelId || 'llama-3.3-70b-versatile', // Use session's model
+          personaId: activeSession.personaId || 'default', // Use session's persona
+          customSystemPrompt: activeSession.customPrompt, // Use session's custom prompt
         }),
       });
 
       const data = await response.json();
 
-      // Check for rate limit
-      if (response.status === 429 && data.rateLimited) {
+      // Check if API key is required
+      if (response.status === 401 && data.requiresApiKey) {
         setRateLimitError(data.message);
+        setShowSettings(true);
+        // Remove the user message since AI couldn't respond
+        updateSession(walletState.address, activeSession);
+        refreshSessions();
+        setIsAiLoading(false);
+        return;
+      }
+
+      // Check for rate limit (informational)
+      if (response.status === 429) {
+        setRateLimitError(data.error || 'Rate limit reached. Please wait a moment.');
         // Remove the user message since AI couldn't respond
         updateSession(walletState.address, activeSession);
         refreshSessions();
@@ -452,6 +583,9 @@ export default function Home() {
     }
   };
 
+  // Save error state
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   // Save session to blockchain
   const handleSaveToMemory = async (sessionId?: string) => {
     const targetSessionId = sessionId || activeSessionId;
@@ -462,6 +596,7 @@ export default function Home() {
 
     setIsSaving(true);
     setSavingSessionId(targetSessionId);
+    setSaveError(null);
 
     try {
       // Convert session to conversation format
@@ -496,9 +631,33 @@ export default function Home() {
         // Refresh balance
         const balance = await getUSDCBalance(walletState.address);
         setWalletState((prev) => ({ ...prev, balance }));
+      } else if (result.error) {
+        setSaveError(result.error);
+        // Auto-clear error after 5 seconds
+        setTimeout(() => setSaveError(null), 5000);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Save error:', error);
+      
+      // Extract error message
+      const errorObj = error as { message?: string; code?: string };
+      let errorMessage = 'Failed to save memory. Please try again.';
+      
+      if (errorObj.message) {
+        errorMessage = errorObj.message;
+      }
+      
+      // Check for user rejection (shouldn't show as error, just cancelled)
+      if (errorObj.code === 'USER_REJECTED' || 
+          errorObj.message?.includes('cancelled') ||
+          errorObj.message?.includes('rejected')) {
+        // Don't show error for user cancellation, just silently stop
+        console.log('User cancelled the transaction');
+      } else {
+        setSaveError(errorMessage);
+        // Auto-clear error after 5 seconds
+        setTimeout(() => setSaveError(null), 5000);
+      }
     } finally {
       setIsSaving(false);
       setSavingSessionId(null);
@@ -540,7 +699,8 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      {walletState.isConnected ? (
+      {/* Security: Only show chat interface if wallet is connected AND authenticated (has encryption key) */}
+      {walletState.isConnected && walletState.encryptionKey && walletState.address ? (
         <main className="flex-1 flex overflow-hidden">
           {/* Session Sidebar */}
           <SessionSidebar
@@ -557,6 +717,11 @@ export default function Home() {
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
             onOpenSettings={() => setShowSettings(true)}
             hasApiKey={!!userApiKey}
+            memories={memories}
+            isLoadingMemories={isLoadingMemories}
+            onRefreshMemories={handleRefreshMemories}
+            onViewMemory={handleViewMemory}
+            onLoadMemoryAsContext={handleLoadMemoryAsContext}
           />
 
           {/* Chat Area */}
@@ -566,9 +731,12 @@ export default function Home() {
               onSendMessage={handleSendMessage}
               isLoading={isAiLoading}
               memories={memories}
+              activeMemoryContext={activeMemoryContext}
+              onRemoveFromContext={handleRemoveFromContext}
               isConnected={walletState.isConnected}
               onSaveToMemory={() => handleSaveToMemory()}
               isSaving={isSaving}
+              saveError={saveError}
               rateLimitError={rateLimitError}
               hasApiKey={!!userApiKey}
               onOpenSettings={() => setShowSettings(true)}
@@ -730,7 +898,21 @@ export default function Home() {
           onSelectMetaMask={handleConnectMetaMask}
           onSelectCircle={handleConnectCircle}
           isLoading={isConnecting}
-          onClose={() => setShowWalletSelector(false)}
+          onClose={() => {
+            setShowWalletSelector(false);
+            // Security: Clear any partial connection state if user cancels
+            // Only clear if not fully authenticated (no encryption key)
+            if (!walletState.encryptionKey) {
+              setWalletState({
+                address: null,
+                isConnected: false,
+                chainId: null,
+                balance: null,
+                encryptionKey: null,
+              });
+              setWalletType(null);
+            }
+          }}
         />
       )}
 
@@ -740,15 +922,33 @@ export default function Home() {
           isOpen={showSettings}
           onClose={() => {
             setShowSettings(false);
-            // Reload API key from settings
+            // Reload settings
             const settings = getSettings(walletState.address!);
-            setUserApiKey(settings.geminiApiKey || '');
+            setUserApiKey(settings.groqApiKey || '');
             // Clear rate limit error when user might have added a key
             setRateLimitError(null);
           }}
           walletAddress={walletState.address}
         />
       )}
+
+      {/* New Chat Modal */}
+      {showNewChatModal && walletState.address && (
+        <NewChatModal
+          isOpen={showNewChatModal}
+          onClose={() => setShowNewChatModal(false)}
+          onCreateChat={handleCreateSessionWithConfig}
+          walletAddress={walletState.address}
+        />
+      )}
+
+      {/* Memory Viewer Modal */}
+      <MemoryViewer
+        memory={viewingMemory}
+        isOpen={!!viewingMemory}
+        onClose={() => setViewingMemory(null)}
+        onLoadAsContext={handleLoadMemoryAsContext}
+      />
     </div>
   );
 }

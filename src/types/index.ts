@@ -25,6 +25,10 @@ export interface ChatSession {
   isSaved: boolean; // Whether it's been saved to blockchain
   savedCid?: string; // IPFS CID if saved
   savedTxHash?: string; // Transaction hash if saved
+  // Per-session AI configuration
+  personaId?: string; // Selected persona for this chat
+  modelId?: string; // Selected model for this chat
+  customPrompt?: string; // Optional custom instructions for this chat
 }
 
 export interface EncryptedMemory {
@@ -40,6 +44,19 @@ export interface Memory {
   conversation: Conversation;
   timestamp: number;
   txHash?: string;
+  blockNumber?: number;
+  explorerUrl?: string;
+}
+
+// Transaction record for saved memories
+export interface MemoryTransaction {
+  cid: string;
+  txHash: string;
+  timestamp: number;
+  title?: string;
+  status: 'pending' | 'confirmed' | 'failed';
+  blockNumber?: number;
+  gasUsed?: string;
 }
 
 export interface WalletState {

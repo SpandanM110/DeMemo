@@ -14,8 +14,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
+  Database,
 } from 'lucide-react';
-import type { ChatSession } from '@/types';
+import SavedMemoriesPanel from './SavedMemoriesPanel';
+import type { ChatSession, Memory } from '@/types';
 
 interface SessionSidebarProps {
   sessions: ChatSession[];
@@ -31,6 +33,12 @@ interface SessionSidebarProps {
   onToggleCollapse: () => void;
   onOpenSettings: () => void;
   hasApiKey: boolean;
+  // New memory props
+  memories: Memory[];
+  isLoadingMemories: boolean;
+  onRefreshMemories: () => void;
+  onViewMemory: (memory: Memory) => void;
+  onLoadMemoryAsContext: (memory: Memory) => void;
 }
 
 export default function SessionSidebar({
@@ -47,10 +55,16 @@ export default function SessionSidebar({
   onToggleCollapse,
   onOpenSettings,
   hasApiKey,
+  memories,
+  isLoadingMemories,
+  onRefreshMemories,
+  onViewMemory,
+  onLoadMemoryAsContext,
 }: SessionSidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [memoriesCollapsed, setMemoriesCollapsed] = useState(false);
 
   const handleStartEdit = (session: ChatSession) => {
     setEditingId(session.id);
@@ -133,6 +147,19 @@ export default function SessionSidebar({
             </button>
           ))}
         </div>
+
+        {/* Memories indicator */}
+        {memories.length > 0 && (
+          <div className="p-2 border-t border-zinc-800">
+            <button
+              onClick={onToggleCollapse}
+              className="w-full p-3 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center"
+              title={`${memories.length} saved memories`}
+            >
+              <Database className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Settings */}
         <div className="p-2 border-t border-zinc-800">
@@ -334,6 +361,17 @@ export default function SessionSidebar({
         )}
       </div>
 
+      {/* Saved Memories Panel */}
+      <SavedMemoriesPanel
+        memories={memories}
+        isLoading={isLoadingMemories}
+        onRefresh={onRefreshMemories}
+        onViewMemory={onViewMemory}
+        onLoadAsContext={onLoadMemoryAsContext}
+        isCollapsed={memoriesCollapsed}
+        onToggleCollapse={() => setMemoriesCollapsed(!memoriesCollapsed)}
+      />
+
       {/* Footer */}
       <div className="p-4 border-t border-zinc-800 space-y-3">
         {/* Settings Button */}
@@ -358,7 +396,7 @@ export default function SessionSidebar({
             {sessions.length} chat{sessions.length !== 1 ? 's' : ''}
           </span>
           <span className="text-teal-400">
-            {sessions.filter(s => s.isSaved).length} saved
+            {memories.length} memor{memories.length !== 1 ? 'ies' : 'y'}
           </span>
         </div>
       </div>

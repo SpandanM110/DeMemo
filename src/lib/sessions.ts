@@ -59,9 +59,18 @@ function saveSessions(walletAddress: string, sessions: ChatSession[]): void {
 }
 
 /**
- * Create a new chat session
+ * Session configuration for creating new chats
  */
-export function createSession(walletAddress: string): ChatSession {
+export interface SessionConfig {
+  personaId?: string;
+  modelId?: string;
+  customPrompt?: string;
+}
+
+/**
+ * Create a new chat session with optional AI configuration
+ */
+export function createSession(walletAddress: string, config?: SessionConfig): ChatSession {
   const session: ChatSession = {
     id: crypto.randomUUID(),
     title: 'New Chat',
@@ -69,6 +78,10 @@ export function createSession(walletAddress: string): ChatSession {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     isSaved: false,
+    // Per-session AI config
+    personaId: config?.personaId,
+    modelId: config?.modelId,
+    customPrompt: config?.customPrompt,
   };
   
   const sessions = getSessions(walletAddress);

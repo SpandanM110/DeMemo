@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Key, Info, Check, AlertCircle } from 'lucide-react';
+import { X, Key, Info, Check, ExternalLink, Zap, Shield, Save } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -12,14 +12,25 @@ interface SettingsModalProps {
 const SETTINGS_KEY_PREFIX = 'dememo_settings_';
 
 export interface UserSettings {
-  geminiApiKey: string;
+  groqApiKey: string;
 }
 
 export function getSettings(walletAddress: string): UserSettings {
-  if (typeof window === 'undefined') return { geminiApiKey: '' };
+  if (typeof window === 'undefined') return { groqApiKey: '' };
   const key = `${SETTINGS_KEY_PREFIX}${walletAddress.toLowerCase()}`;
   const stored = localStorage.getItem(key);
-  return stored ? JSON.parse(stored) : { geminiApiKey: '' };
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    // Migration: rename geminiApiKey to groqApiKey if exists
+    if (parsed.geminiApiKey && !parsed.groqApiKey) {
+      parsed.groqApiKey = '';
+      delete parsed.geminiApiKey;
+    }
+    return {
+      groqApiKey: parsed.groqApiKey || '',
+    };
+  }
+  return { groqApiKey: '' };
 }
 
 export function saveSettings(walletAddress: string, settings: UserSettings): void {
@@ -33,39 +44,49 @@ export default function SettingsModal({
   onClose,
   walletAddress,
 }: SettingsModalProps) {
-  const [geminiKey, setGeminiKey] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [saved, setSaved] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     if (isOpen && walletAddress) {
       const settings = getSettings(walletAddress);
-      setGeminiKey(settings.geminiApiKey || '');
+      setApiKey(settings.groqApiKey || '');
       setSaved(false);
     }
   }, [isOpen, walletAddress]);
 
   const handleSave = () => {
-    saveSettings(walletAddress, { geminiApiKey: geminiKey.trim() });
+    saveSettings(walletAddress, { groqApiKey: apiKey.trim() });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleClear = () => {
-    setGeminiKey('');
-    saveSettings(walletAddress, { geminiApiKey: '' });
+    setApiKey('');
+    saveSettings(walletAddress, { groqApiKey: '' });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   if (!isOpen) return null;
 
+  const hasKey = apiKey.trim().length > 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md mx-4 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-zinc-100">Settings</h2>
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <Key className="w-5 h-5 text-zinc-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-100">API Settings</h2>
+              <p className="text-xs text-zinc-500">Manage your AI access</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
             className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
@@ -74,19 +95,41 @@ export default function SettingsModal({
           </button>
         </div>
 
-        {/* API Key Section */}
-        <div className="space-y-4">
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-zinc-300 mb-2">
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Status Badge */}
+          <div className={`p-3 rounded-lg border ${
+            hasKey 
+              ? 'bg-teal-500/5 border-teal-500/20' 
+              : 'bg-amber-500/5 border-amber-500/20'
+          }`}>
+            <div className="flex items-center gap-2">
+              {hasKey ? (
+                <>
+                  <Check className="w-4 h-4 text-teal-400" />
+                  <span className="text-sm text-teal-400">API key configured</span>
+                </>
+              ) : (
+                <>
+                  <Key className="w-4 h-4 text-amber-400" />
+                  <span className="text-sm text-amber-400">API key required to chat</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* API Key Input */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-zinc-300">
               <Key className="w-4 h-4" />
-              Gemini API Key (BYOK)
+              Groq API Key
             </label>
             <div className="relative">
               <input
                 type={showKey ? 'text' : 'password'}
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder="Enter your Gemini API key..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="gsk_..."
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600 pr-20 text-sm font-mono"
               />
               <button
@@ -97,47 +140,50 @@ export default function SettingsModal({
                 {showKey ? 'Hide' : 'Show'}
               </button>
             </div>
+            <a
+              href="https://console.groq.com/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300"
+            >
+              Get a free API key at console.groq.com
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
 
-          {/* Info Box */}
-          <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-800">
-            <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-zinc-500 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-zinc-500 space-y-2">
-                <p>
-                  <span className="text-zinc-400">Without API key:</span> Limited to 5 messages per chat session.
+          {/* Info Boxes */}
+          <div className="space-y-3">
+            <div className="p-3 bg-zinc-800/30 rounded-lg border border-zinc-800">
+              <div className="flex items-start gap-3">
+                <Shield className="w-4 h-4 text-zinc-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-zinc-500">
+                  Your API key is stored locally in your browser and never sent to our servers.
                 </p>
-                <p>
-                  <span className="text-zinc-400">With your own key:</span> Unlimited messages. Your key is stored locally and never sent to our servers.
+              </div>
+            </div>
+
+            <div className="p-3 bg-zinc-800/30 rounded-lg border border-zinc-800">
+              <div className="flex items-start gap-3">
+                <Zap className="w-4 h-4 text-teal-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-zinc-500">
+                  <span className="text-teal-400">Groq is super fast!</span> Free tier with generous limits. No credit card required.
                 </p>
-                <p className="text-xs">
-                  Get a free API key at{' '}
-                  <a
-                    href="https://aistudio.google.com/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-teal-400 hover:underline"
-                  >
-                    aistudio.google.com
-                  </a>
+              </div>
+            </div>
+
+            <div className="p-3 bg-zinc-800/30 rounded-lg border border-zinc-800">
+              <div className="flex items-start gap-3">
+                <Info className="w-4 h-4 text-zinc-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-zinc-500">
+                  Choose your AI persona and model when starting a new chat.
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Rate Limit Info */}
-          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-            <div className="flex items-center gap-2 text-sm">
-              <AlertCircle className="w-4 h-4 text-zinc-500" />
-              <span className="text-zinc-400">
-                Free tier: <span className="text-zinc-300">5 messages per session</span>
-              </span>
-            </div>
-          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-800">
+        {/* Footer */}
+        <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
           <button
             onClick={handleClear}
             className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -153,9 +199,10 @@ export default function SettingsModal({
             )}
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-zinc-100 text-zinc-900 rounded-lg text-sm font-medium hover:bg-white transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-900 rounded-lg text-sm font-medium hover:bg-white transition-colors"
             >
-              Save Settings
+              <Save className="w-4 h-4" />
+              Save
             </button>
           </div>
         </div>
