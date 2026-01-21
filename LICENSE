@@ -2,15 +2,15 @@ DUAL LICENSE AGREEMENT
 
 Copyright (c) 2026 SpandanM110. All Rights Reserved.
 
-This software is released under a DUAL LICENSE structure:
+This software is distributed under a DUAL LICENSE structure with time-based terms:
 
 ================================================================================
 PHASE 1: HACKATHON PERIOD (January 9 - January 24, 2026)
 ================================================================================
 
-During the "Agentic Commerce on Arc Hackathon" period (January 9, 2026 through
-January 24, 2026, 11:59 PM UTC), this software is licensed under the following
-temporary permissive terms:
+During the "Agentic Commerce on Arc Hackathon" period, commencing January 9, 2026
+at 12:00 AM UTC and terminating January 24, 2026 at 11:59 PM UTC (the "Hackathon
+Period"), this software is licensed under the following temporary permissive terms:
 
 MIT License (Temporary - Hackathon Period Only)
 
@@ -34,76 +34,106 @@ PHASE 2: POST-HACKATHON (After January 24, 2026)
 
 EFFECTIVE DATE: January 25, 2026, 12:00 AM UTC
 
-After the hackathon period ends, this software automatically converts to a
-PROPRIETARY LICENSE with the following terms:
+Upon expiration of the Hackathon Period, this software automatically converts to a
+PROPRIETARY LICENSE with the following terms and conditions:
 
 PROPRIETARY SOFTWARE LICENSE
 
 1. GRANT OF LICENSE
    This license does NOT grant you any rights to use, copy, modify, merge,
    publish, distribute, sublicense, and/or sell copies of this software
-   without explicit written permission from the copyright holder.
+   without explicit written permission from the copyright holder. All rights
+   not expressly granted herein are reserved by the copyright holder.
 
 2. RESTRICTIONS
-   You may NOT:
-   - Use this software for any purpose without explicit written permission
-   - Copy or reproduce this software in any form
-   - Modify, adapt, or create derivative works based on this software
-   - Distribute, sublicense, lease, rent, or lend this software
-   - Reverse engineer, decompile, or disassemble this software
-   - Remove or alter any proprietary notices, labels, or marks
-   - Use this software for commercial purposes
-   - Use this software for educational or research purposes without permission
-   - Host, deploy, or make this software available to third parties
+   You are expressly prohibited from:
+   a. Using this software for any purpose without explicit written permission
+      from the copyright holder
+   b. Copying, reproducing, or duplicating this software in any form or medium
+   c. Modifying, adapting, translating, or creating derivative works based
+      upon this software
+   d. Distributing, sublicensing, leasing, renting, lending, or otherwise
+      transferring this software to any third party
+   e. Reverse engineering, decompiling, disassembling, or otherwise attempting
+      to derive the source code of this software
+   f. Removing, altering, or obscuring any proprietary notices, labels, or
+      marks on this software
+   g. Using this software for any commercial purpose whatsoever
+   h. Using this software for educational, research, or academic purposes
+      without prior written permission
+   i. Hosting, deploying, or making this software available to third parties
+      through any means, including but not limited to cloud services, web
+      hosting, or application platforms
 
-3. EXISTING COPIES
-   Any copies, forks, or derivatives created during the hackathon period
-   (Phase 1) must:
-   - Cease all commercial use after January 24, 2026
-   - Not be further distributed after January 24, 2026
-   - Include attribution to the original author (SpandanM110)
-   - Not claim to be the original or official version
+3. EXISTING COPIES AND DERIVATIVES
+   Any copies, forks, or derivative works created during the Hackathon Period
+   (Phase 1) are subject to the following conditions:
+   a. All commercial use must cease immediately upon expiration of the
+      Hackathon Period (January 24, 2026, 11:59 PM UTC)
+   b. Further distribution, publication, or dissemination is prohibited after
+      the expiration of the Hackathon Period
+   c. All copies must include proper attribution to the original author
+      (SpandanM110) and reference to the original source
+   d. No copy or derivative may claim to be the original, official, or
+      authorized version of this software
+   e. Any derivative works must clearly indicate their derivative nature and
+      distinguish themselves from the original software
 
-4. INTELLECTUAL PROPERTY
-   This software and all copies thereof are proprietary to SpandanM110 and
-   title to all copies is retained by SpandanM110. All rights in the software
-   not specifically granted in this license are reserved to SpandanM110.
+4. INTELLECTUAL PROPERTY RIGHTS
+   This software and all intellectual property rights therein, including but
+   not limited to copyrights, trademarks, trade secrets, and patents, are
+   proprietary to SpandanM110. Title to all copies of this software is
+   retained by SpandanM110. All rights in the software not specifically
+   granted in this license are expressly reserved to SpandanM110. This license
+   does not transfer any ownership rights in the software to the licensee.
 
-5. NO WARRANTY
-   THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+5. DISCLAIMER OF WARRANTIES
+   THIS SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF
+   ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+   OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, AND
+   ANY WARRANTIES ARISING FROM COURSE OF DEALING OR USAGE OF TRADE. THE
+   COPYRIGHT HOLDER DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR
+   REQUIREMENTS, OPERATE UNINTERRUPTED OR ERROR-FREE, OR BE COMPATIBLE WITH
+   ANY PARTICULAR HARDWARE OR SOFTWARE CONFIGURATION.
 
 6. LIMITATION OF LIABILITY
-   IN NO EVENT SHALL SPANDANM110 BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-   DEALINGS IN THE SOFTWARE.
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
+   SPANDANM110, ITS AFFILIATES, AGENTS, OR REPRESENTATIVES BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES,
+   INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER
+   INTANGIBLE LOSSES, ARISING OUT OF OR IN CONNECTION WITH THIS SOFTWARE, THE
+   USE OF OR INABILITY TO USE THIS SOFTWARE, OR ANY OTHER DEALINGS IN THIS
+   SOFTWARE, REGARDLESS OF THE THEORY OF LIABILITY (CONTRACT, TORT, NEGLIGENCE,
+   STRICT LIABILITY, OR OTHERWISE) AND EVEN IF ADVISED OF THE POSSIBILITY OF
+   SUCH DAMAGES.
 
 7. TERMINATION
-   Any rights granted during the hackathon period terminate automatically on
-   January 25, 2026. Your rights under the proprietary license will terminate
-   automatically without notice if you fail to comply with any of its terms.
+   Any rights granted during the Hackathon Period (Phase 1) shall terminate
+   automatically and without notice upon expiration of the Hackathon Period
+   (January 24, 2026, 11:59 PM UTC). Your rights under the proprietary license
+   (Phase 2) will terminate automatically without notice if you fail to comply
+   with any term or condition of this license. Upon termination, you must
+   immediately cease all use of the software and destroy all copies in your
+   possession or control.
 
-8. GOVERNING LAW
-   This license shall be governed by and construed in accordance with
-   applicable laws, without regard to conflicts of law principles.
-
-================================================================================
-SUMMARY
-================================================================================
-
-| Period                      | License Type | Can Use? | Can Modify? | Can Distribute? |
-|-----------------------------|--------------|----------|-------------|-----------------|
-| Jan 9-24, 2026 (Hackathon)  | MIT          | ✅ Yes   | ✅ Yes      | ✅ Yes          |
-| After Jan 24, 2026          | Proprietary  | ❌ No    | ❌ No       | ❌ No           |
+8. GOVERNING LAW AND JURISDICTION
+   This license shall be governed by and construed in accordance with the laws
+   of the jurisdiction in which the copyright holder is located, without regard
+   to its conflict of law provisions. Any disputes arising out of or relating to
+   this license or the software shall be subject to the exclusive jurisdiction
+   of the courts in such jurisdiction.
 
 ================================================================================
 
-For licensing inquiries after the hackathon period, please contact:
-SpandanM110 (GitHub: https://github.com/SpandanM110)
+For licensing inquiries, commercial licensing requests, or questions regarding
+this license agreement after the hackathon period, please contact:
 
----
+SpandanM110
+GitHub: https://github.com/SpandanM110
 
-Built for the Agentic Commerce on Arc Hackathon
-https://lablab.ai/ai-hackathons/agentic-commerce-on-arc
+================================================================================
+
+This software was developed for the Agentic Commerce on Arc Hackathon.
+For more information, visit: https://lablab.ai/ai-hackathons/agentic-commerce-on-arc
+
+================================================================================

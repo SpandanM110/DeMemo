@@ -1,32 +1,35 @@
 # DeMemo
 
-**Decentralized AI Memory**
+**Decentralized AI Memory Infrastructure**
 
-DeMemo is a decentralized AI memory layer built on Arc Network. Your wallet is your identity, your conversations are encrypted and stored on IPFS, and your memories follow you everywhere.
+DeMemo is an enterprise-grade decentralized artificial intelligence memory layer built on the Arc Network blockchain infrastructure. The platform establishes wallet-based identity management, implements end-to-end encryption for all conversational data, and provides permanent decentralized storage through IPFS. All memory records are immutably indexed on-chain, ensuring data persistence and portability across applications.
 
 [![DeMemo Banner](https://img.shields.io/badge/Built%20for-Agentic%20Commerce%20on%20Arc%20Hackathon-black?style=for-the-badge)](https://lablab.ai/ai-hackathons/agentic-commerce-on-arc)
 
-## Features
+## Core Features
 
-- **Wallet-Based Identity**: Your wallet is your login. No accounts needed.
-- **MetaMask Support**: Connect your own wallet for full self-custody.
-- **Circle Wallets**: Developer-controlled wallets - no browser extension needed.
-- **End-to-End Encryption**: Memories are encrypted with keys derived from your wallet signature.
-- **Permanent Storage**: Encrypted data stored on IPFS via Pinata.
-- **Blockchain Indexed**: Memory CIDs recorded on Arc Network smart contract.
-- **AI with Memory**: Chat with Gemini AI that remembers your previous conversations.
-- **Session Management**: Create multiple chat sessions, save what matters.
-- **Micro Payments**: Pay just 0.01 USDC per memory stored.
+- **Wallet-Based Authentication**: Cryptographic wallet signatures serve as primary authentication mechanism, eliminating traditional account management requirements.
+- **MetaMask Integration**: Full support for MetaMask browser extension, enabling complete user self-custody of cryptographic keys.
+- **Circle Wallet Support**: Integration with Circle's developer-controlled wallet infrastructure, providing seamless wallet functionality without browser extension dependencies.
+- **End-to-End Encryption**: All memory data is encrypted client-side using AES-256-GCM encryption with keys cryptographically derived from wallet signatures.
+- **Decentralized Storage**: Encrypted payloads are permanently stored on the InterPlanetary File System (IPFS) via Pinata's infrastructure.
+- **Blockchain Indexing**: Content identifiers (CIDs) are immutably recorded on Arc Network smart contracts for permanent on-chain reference.
+- **Contextual AI Integration**: Groq AI models with persistent memory context from stored conversations, supporting multiple models via Bring Your Own Key (BYOK) architecture.
+- **Session Management**: Multi-session architecture allowing users to organize and manage distinct conversation threads.
+- **Microtransaction Model**: Cost-effective storage pricing at 0.01 USDC per memory record stored on-chain.
 
-## Quick Start
+## Installation and Setup
 
-### Prerequisites
+### System Requirements
 
-- Node.js 18+
-- MetaMask browser extension (optional)
-- Arc Testnet USDC (get from [faucet.circle.com](https://faucet.circle.com))
+- **Node.js**: Version 18.0.0 or higher
+- **Package Manager**: npm or compatible package manager
+- **Browser Extension**: MetaMask browser extension (optional, for self-custody wallet access)
+- **Testnet Tokens**: Arc Testnet USDC tokens (obtainable from [Circle Testnet Faucet](https://faucet.circle.com))
 
-### 1. Clone & Install
+### Installation Procedure
+
+#### Step 1: Repository Cloning and Dependency Installation
 
 ```bash
 git clone <your-repo-url>
@@ -34,167 +37,194 @@ cd DeMemo
 npm install
 ```
 
-### 2. Configure Environment
+#### Step 2: Environment Configuration
 
-Copy the example environment file:
+Create a local environment configuration file by copying the provided template:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your API keys:
+Configure the following environment variables in `.env.local`:
 
 ```env
-# Pinata (IPFS) - Get from https://app.pinata.cloud
+# Pinata IPFS Configuration
+# Obtain JWT token from: https://app.pinata.cloud
 PINATA_JWT=your_pinata_jwt
 
-# Gemini AI - Get from https://aistudio.google.com
-GEMINI_API_KEY=your_gemini_key
+# AI Configuration (BYOK - Bring Your Own Key)
+# Users provide their own Groq API key in the app Settings
+# Get a free API key at: https://console.groq.com/keys
+# No server-side AI key configuration needed
 
-# Arc Network
+# Arc Network Blockchain Configuration
 NEXT_PUBLIC_ARC_RPC_URL=https://rpc.testnet.arc.network
 NEXT_PUBLIC_ARC_CHAIN_ID=5042002
-NEXT_PUBLIC_MEMORY_CONTRACT_ADDRESS=your_deployed_contract
+NEXT_PUBLIC_MEMORY_CONTRACT_ADDRESS=your_deployed_contract_address
 
-# Circle (Optional - for developer-controlled wallets)
+# Circle Wallet Integration (Optional)
+# Required only for developer-controlled wallet functionality
 CIRCLE_API_KEY=your_circle_api_key
 CIRCLE_ENTITY_SECRET=your_entity_secret
 CIRCLE_WALLET_SET_ID=your_wallet_set_id
 ```
 
-### 3. Deploy Smart Contract
+#### Step 3: Smart Contract Deployment
 
-1. Go to [Remix IDE](https://remix.ethereum.org)
-2. Create new file `MemoryStorage.sol`
-3. Copy contents from `src/contracts/MemoryStorage.sol`
-4. Compile with Solidity 0.8.20+
-5. Connect MetaMask to Arc Testnet
-6. Deploy contract
-7. Copy contract address to `.env.local`
+Deploy the MemoryStorage smart contract to Arc Testnet:
 
-### 4. Run Development Server
+1. Navigate to [Remix IDE](https://remix.ethereum.org)
+2. Create a new Solidity file named `MemoryStorage.sol`
+3. Copy the contract source code from `src/contracts/MemoryStorage.sol`
+4. Compile using Solidity compiler version 0.8.20 or higher
+5. Connect MetaMask wallet to Arc Testnet network
+6. Deploy the contract to Arc Testnet
+7. Copy the deployed contract address to `NEXT_PUBLIC_MEMORY_CONTRACT_ADDRESS` in `.env.local`
+
+#### Step 4: Application Execution
+
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Access the application at [http://localhost:3000](http://localhost:3000).
 
-## Project Structure
+## Architecture and Project Structure
+
+The DeMemo codebase follows a modular architecture with clear separation of concerns:
 
 ```
 DeMemo/
 ├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── ai/chat/route.ts      # Gemini AI endpoint
-│   │   │   ├── circle/               # Circle wallet API
-│   │   │   └── ipfs/                 # IPFS upload/retrieve
-│   │   ├── page.tsx                  # Main application
-│   │   ├── layout.tsx                # Root layout
-│   │   └── globals.css               # Global styles
-│   ├── components/
-│   │   ├── WalletConnect.tsx         # Wallet connection UI
-│   │   ├── WalletSelector.tsx        # Wallet type selector
-│   │   ├── ChatInterface.tsx         # AI chat interface
-│   │   └── SessionSidebar.tsx        # Session management
-│   ├── lib/
-│   │   ├── encryption.ts             # AES-256-GCM encryption
-│   │   ├── blockchain.ts             # Arc Network interaction
-│   │   ├── wallet.ts                 # MetaMask utilities
-│   │   ├── circleWallet.ts           # Circle wallet utilities
-│   │   ├── sessions.ts               # Session management
-│   │   └── memory.ts                 # Memory orchestration
-│   ├── contracts/
-│   │   └── MemoryStorage.sol         # Smart contract
-│   └── types/
-│       └── index.ts                  # TypeScript definitions
-├── .env.example                      # Environment template
-├── package.json
-└── README.md
+│   ├── app/                          # Next.js application directory
+│   │   ├── api/                      # API route handlers
+│   │   │   ├── ai/chat/route.ts      # Groq AI chat endpoint
+│   │   │   ├── circle/               # Circle wallet API integration
+│   │   │   └── ipfs/                 # IPFS upload and retrieval endpoints
+│   │   ├── page.tsx                  # Main application entry point
+│   │   ├── layout.tsx                # Root application layout
+│   │   └── globals.css               # Global stylesheet
+│   ├── components/                   # React UI components
+│   │   ├── WalletConnect.tsx         # Wallet connection interface
+│   │   ├── WalletSelector.tsx        # Wallet type selection component
+│   │   ├── ChatInterface.tsx         # AI chat user interface
+│   │   └── SessionSidebar.tsx        # Session management sidebar
+│   ├── lib/                          # Core business logic libraries
+│   │   ├── encryption.ts             # AES-256-GCM encryption implementation
+│   │   ├── blockchain.ts             # Arc Network blockchain interactions
+│   │   ├── wallet.ts                 # MetaMask wallet utilities
+│   │   ├── circleWallet.ts           # Circle wallet integration utilities
+│   │   ├── sessions.ts               # Session management logic
+│   │   └── memory.ts                 # Memory orchestration and management
+│   ├── contracts/                    # Smart contract source code
+│   │   └── MemoryStorage.sol         # Memory storage smart contract
+│   └── types/                        # TypeScript type definitions
+│       └── index.ts                  # Shared type definitions
+├── .env.example                      # Environment variable template
+├── package.json                      # Node.js package configuration
+└── README.md                         # Project documentation
 ```
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 15, React 19, TypeScript |
-| Styling | Tailwind CSS |
-| Blockchain | Arc Network, ethers.js v6 |
-| Storage | Pinata IPFS |
-| AI | Google Gemini 1.5 Flash |
-| Encryption | Web Crypto API (AES-256-GCM) |
-| Wallets | MetaMask, Circle Developer-Controlled Wallets |
+| Component | Technology | Version/Details |
+|-----------|------------|-----------------|
+| **Frontend Framework** | Next.js | 15.x |
+| **UI Library** | React | 19.x |
+| **Language** | TypeScript | Latest stable |
+| **Styling Framework** | Tailwind CSS | Latest stable |
+| **Blockchain Network** | Arc Network | Testnet |
+| **Blockchain Library** | ethers.js | v6.x |
+| **Decentralized Storage** | Pinata IPFS | Production API |
+| **AI Provider** | Groq | Multiple models (BYOK) |
+| **Encryption Standard** | Web Crypto API | AES-256-GCM |
+| **Wallet Providers** | MetaMask, Circle | Developer-Controlled Wallets |
 
-## How It Works
+## System Architecture and Workflow
 
-1. **Connect Wallet**: Use MetaMask or Circle Wallet to sign in.
+The DeMemo platform operates through the following sequential workflow:
 
-2. **Chat Freely**: Create unlimited chat sessions stored locally in your browser.
+1. **Wallet Authentication**: Users authenticate by connecting either a MetaMask wallet or Circle developer-controlled wallet, establishing cryptographic identity through wallet signature verification.
 
-3. **Save to Memory**: When you want to keep a conversation forever, click "Save to Memory" and pay 0.01 USDC.
+2. **Session Initialization**: Users may create unlimited chat sessions, which are initially stored in browser local storage for temporary access and management.
 
-4. **Encryption**: Your conversation is encrypted client-side using a key derived from your wallet signature.
+3. **Memory Persistence**: When users elect to permanently store a conversation, they initiate the "Save to Memory" action, which triggers a microtransaction payment of 0.01 USDC.
 
-5. **Storage**: Encrypted data is uploaded to IPFS via Pinata.
+4. **Client-Side Encryption**: Prior to storage, all conversation data undergoes client-side encryption using AES-256-GCM, with encryption keys cryptographically derived from the user's wallet signature.
 
-6. **Blockchain**: The IPFS CID is recorded on Arc Network's smart contract.
+5. **IPFS Storage**: The encrypted payload is uploaded to the InterPlanetary File System (IPFS) via Pinata's infrastructure, receiving a unique content identifier (CID).
 
-7. **AI Context**: Saved memories are loaded and provided as context to the AI for personalized responses.
+6. **Blockchain Indexing**: The IPFS CID is immutably recorded on the Arc Network smart contract, creating a permanent on-chain reference to the encrypted memory.
 
-## Smart Contract
+7. **AI Context Integration**: When users engage in subsequent conversations, previously saved memories are retrieved, decrypted, and provided as contextual input to the Groq AI model, enabling personalized and contextually-aware responses.
 
-The `MemoryStorage` contract on Arc Network:
+## Smart Contract Specification
 
-- Stores IPFS CIDs for each wallet address
-- Charges 0.01 USDC per memory
-- Emits events for easy indexing
-- Supports memory retrieval and deletion
+The `MemoryStorage` smart contract deployed on Arc Network provides the following functionality:
+
+- **CID Storage**: Maintains a mapping of wallet addresses to IPFS content identifiers (CIDs) for persistent memory records
+- **Payment Processing**: Implements a fixed fee structure of 0.01 USDC per memory storage operation
+- **Event Emission**: Emits standardized events for off-chain indexing and monitoring purposes
+- **Memory Management**: Provides functions for memory retrieval and deletion operations
 
 ## Arc Network Configuration
 
-Add Arc Testnet to MetaMask:
+To interact with DeMemo, configure MetaMask with the following Arc Testnet network parameters:
 
-| Setting | Value |
-|---------|-------|
+| Configuration Parameter | Value |
+|------------------------|-------|
 | Network Name | Arc Testnet |
 | RPC URL | https://rpc.testnet.arc.network |
 | Chain ID | 5042002 |
-| Currency | USDC |
-| Explorer | https://testnet.arcscan.app |
+| Native Currency | USDC |
+| Block Explorer | https://testnet.arcscan.app |
 
-## Development
+## Development Commands
+
+The following commands are available for development and deployment:
 
 ```bash
-# Run development server
+# Start development server with hot-reload
 npm run dev
 
-# Build for production
+# Build optimized production bundle
 npm run build
 
 # Start production server
 npm start
 
-# Lint code
+# Execute code linting
 npm run lint
 ```
 
+## Security Considerations
+
+- All encryption operations are performed client-side using the Web Crypto API
+- Private keys and wallet signatures never leave the user's browser environment
+- IPFS storage contains only encrypted data; decryption keys are never transmitted
+- Smart contract interactions require explicit user approval via wallet signature
+
 ## License
 
-**Dual License** - Time-Based
+This software is distributed under a **Dual License Agreement** with time-based terms:
 
-| Period | License | Permissions |
-|--------|---------|-------------|
-| **Jan 9-24, 2026** (Hackathon) | MIT | ✅ Use, modify, distribute freely |
-| **After Jan 24, 2026** | Proprietary | ❌ All rights reserved |
+| Period | License Type | Permissions |
+|--------|--------------|-------------|
+| **January 9-24, 2026** (Hackathon Period) | MIT License | Use, modify, and distribute freely |
+| **After January 24, 2026** | Proprietary License | All rights reserved |
 
-During the hackathon period, this software is open source under MIT License.
-After January 24, 2026, it converts to a proprietary license.
+During the designated hackathon period (January 9-24, 2026), this software is licensed under the MIT License, permitting unrestricted use, modification, and distribution. Effective January 25, 2026, 12:00 AM UTC, the license automatically converts to a proprietary license with all rights reserved.
 
-See the [LICENSE](LICENSE) file for full details.
+For complete license terms and conditions, please refer to the [LICENSE](LICENSE) file.
 
-© 2026 SpandanM110
+## Copyright
+
+Copyright © 2026 SpandanM110. All Rights Reserved.
 
 ---
 
-Built for the [Agentic Commerce on Arc Hackathon](https://lablab.ai/ai-hackathons/agentic-commerce-on-arc).
+**Acknowledgments**
+
+This project was developed for the [Agentic Commerce on Arc Hackathon](https://lablab.ai/ai-hackathons/agentic-commerce-on-arc).
